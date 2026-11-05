@@ -1,0 +1,6 @@
+{
+  "name": "Painel de Provas Dilson Ferreira",
+  "description": "Dashboard para monitoramento do serviço de edição de fotos com galeria de provas sincronizada em tempo real com o Google Drive, ferramenta de seleção, comentários e notificações para clientes.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

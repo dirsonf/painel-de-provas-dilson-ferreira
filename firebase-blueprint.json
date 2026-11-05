@@ -1,0 +1,298 @@
+{
+  "entities": {
+    "Project": {
+      "title": "Photo Shoot Project",
+      "description": "Represents a photography and photo editing project for a client, synced with a Drive folder",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier of the project"
+        },
+        "clientName": {
+          "type": "string",
+          "description": "Full name of the client"
+        },
+        "clientEmail": {
+          "type": "string",
+          "format": "email",
+          "description": "Email address of the client matching their auth login"
+        },
+        "clientPhone": {
+          "type": "string",
+          "description": "Contact phone number of the client"
+        },
+        "projectName": {
+          "type": "string",
+          "description": "Name or concept of the photo shoot project"
+        },
+        "status": {
+          "type": "string",
+          "enum": ["uploaded", "reviewing", "approved", "editing", "partial_delivered", "delivered"],
+          "description": "Current workflow status of the project editing"
+        },
+        "driveFolderId": {
+          "type": "string",
+          "description": "Google Drive Folder ID containing the proofs images"
+        },
+        "selectedDriveFolderId": {
+          "type": "string",
+          "description": "Google Drive Folder ID where approved/selected photos are directed or copied"
+        },
+        "deliveredDriveFolderId": {
+          "type": "string",
+          "description": "Google Drive Folder ID containing the finalized delivered photos (03 - EDITADAS)"
+        },
+        "deliveredCount": {
+          "type": "integer",
+          "description": "Number of final edited photos delivered so far"
+        },
+        "deliveryNotes": {
+          "type": "string",
+          "description": "Notes or delivery message from the photographer regarding partial or final delivered files"
+        },
+        "deliveryEstimate": {
+          "type": "string",
+          "description": "Estimated delivery date of the final edited photos"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Timestamp of creation"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Timestamp of last update"
+        },
+        "selectedCount": {
+          "type": "integer",
+          "description": "Number of photos approved by the client"
+        },
+        "totalCount": {
+          "type": "integer",
+          "description": "Total number of proof photos in the gallery"
+        },
+        "adminNotes": {
+          "type": "string",
+          "description": "Private notes or details compiled by the photographer"
+        },
+        "priceEstimate": {
+          "type": "number",
+          "description": "Total estimate price or budget of the shoot"
+        },
+        "contractedCount": {
+          "type": "integer",
+          "description": "Number of included photos in the contracted package"
+        },
+        "extraPhotoPrice": {
+          "type": "number",
+          "description": "Price per additional selected photo beyond the package"
+        },
+        "bonusPhotosCount": {
+          "type": "integer",
+          "description": "Number of complimentary or gift photos provided to the client for free"
+        },
+        "clientFinalNotes": {
+          "type": "string",
+          "description": "General observations or batch delivery instructions provided by client upon finalizing selection"
+        },
+        "sessionDate": {
+          "type": "string",
+          "description": "Actual date the photoshoot session took place"
+        },
+        "sessionValue": {
+          "type": "number",
+          "description": "Total value paid for the photoshoot session to calculate 25% cashback"
+        },
+        "referralCode": {
+          "type": "string",
+          "description": "Custom or auto-generated VIP referral and cashback code"
+        },
+        "referredByCode": {
+          "type": "string",
+          "description": "The referral code of the client who referred this project"
+        },
+        "referralCreditsTotal": {
+          "type": "number",
+          "description": "Total accumulated VIP cashback credits in R$ from own session and referrals"
+        },
+        "referralCreditsUsed": {
+          "type": "number",
+          "description": "Amount of VIP credits already used towards shoots"
+        },
+        "referralCount": {
+          "type": "integer",
+          "description": "Number of friends referred who closed photoshoot sessions"
+        }
+      },
+      "required": ["id", "clientName", "clientEmail", "projectName", "status", "driveFolderId", "createdAt", "updatedAt"]
+    },
+    "Proof": {
+      "title": "Proof Image",
+      "description": "Single image proof from the photoshoot representing options for user selection",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "ID of the proof"
+        },
+        "driveFileId": {
+          "type": "string",
+          "description": "Google Drive file ID of the image"
+        },
+        "name": {
+          "type": "string",
+          "description": "Filename of the proof image"
+        },
+        "thumbnailUrl": {
+          "type": "string",
+          "description": "URL of the thumbnail image representation"
+        },
+        "fullUrl": {
+          "type": "string",
+          "description": "Direct URL or proxy link to download the high-res proof design"
+        },
+        "status": {
+          "type": "string",
+          "enum": ["pending", "approved", "rejected"],
+          "description": "Selection level status assigned by user"
+        },
+        "clientNotes": {
+          "type": "string",
+          "description": "Observations or requests written by the client for this specific photo editing"
+        },
+        "isSelected": {
+          "type": "boolean",
+          "description": "True if the image contains selection approval"
+        },
+        "isBonus": {
+          "type": "boolean",
+          "description": "True if the photographer selected this photo as a complimentary gift"
+        },
+        "bonusNote": {
+          "type": "string",
+          "description": "Message from the photographer explaining why this photo was gifted"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Timestamp of selection modification"
+        }
+      },
+      "required": ["id", "name", "thumbnailUrl", "fullUrl", "status", "isSelected", "updatedAt"]
+    },
+    "Notification": {
+      "title": "Notification Event",
+      "description": "Status logging or in-app push-notification triggered automatically on changes",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique notification ID"
+        },
+        "title": {
+          "type": "string",
+          "description": "Brief notification title"
+        },
+        "message": {
+          "type": "string",
+          "description": "Detail information of the status change or comments"
+        },
+        "type": {
+          "type": "string",
+          "enum": ["status_change", "approval", "notes_added", "system"],
+          "description": "The category of notification"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Notification timeline mark"
+        },
+        "read": {
+          "type": "boolean",
+          "description": "True if the user has dismissed/marked this notification"
+        },
+        "recipientEmail": {
+          "type": "string",
+          "format": "email",
+          "description": "Email address of the intended recipient (client or admin)"
+        }
+      },
+      "required": ["id", "title", "message", "type", "createdAt", "read", "recipientEmail"]
+    },
+    "DeliveredProof": {
+      "title": "Delivered Final Edited Photo",
+      "description": "Final edited high-resolution photo delivered from 03 - EDITADAS folder with AI prompts and usage tips",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "ID of the delivered photo"
+        },
+        "driveFileId": {
+          "type": "string",
+          "description": "Google Drive file ID of the final image"
+        },
+        "name": {
+          "type": "string",
+          "description": "Filename of the edited photo"
+        },
+        "thumbnailUrl": {
+          "type": "string",
+          "description": "URL of the thumbnail representation"
+        },
+        "fullUrl": {
+          "type": "string",
+          "description": "Direct URL or proxy link to download high-res file"
+        },
+        "batchType": {
+          "type": "string",
+          "enum": ["partial", "final"],
+          "description": "Whether this photo was delivered as part of a partial batch or final completion"
+        },
+        "creativeNotes": {
+          "type": "string",
+          "description": "Styling, composition and lighting notes provided by Dilson Ferreira"
+        },
+        "notes": {
+          "type": "string",
+          "description": "Additional remarks or annotations"
+        },
+        "downloadUrl": {
+          "type": "string",
+          "description": "Direct download link for high resolution file"
+        },
+        "deliveredAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Timestamp when the file was delivered"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Timestamp of delivery"
+        }
+      },
+      "required": ["id", "name", "thumbnailUrl", "fullUrl", "batchType", "updatedAt"]
+    }
+  },
+  "firestore": {
+    "projects": {
+      "schema": "Project",
+      "description": "Root collection of shooting projects"
+    },
+    "projects/{projectId}/proofs": {
+      "schema": "Proof",
+      "description": "Subcollection of picture proofs matching the shoot"
+    },
+    "projects/{projectId}/delivered": {
+      "schema": "DeliveredProof",
+      "description": "Subcollection of final edited delivered photos from 03 - EDITADAS"
+    },
+    "projects/{projectId}/notifications": {
+      "schema": "Notification",
+      "description": "Subcollection of notifications related specifically to the project"
+    }
+  }
+}

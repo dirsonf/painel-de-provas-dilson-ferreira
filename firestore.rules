@@ -1,0 +1,242 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Global Catch-All Safety Net
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // --- Core Reusable Helpers ---
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isEmailVerified() {
+      return isSignedIn() && (request.auth.token.email_verified == true || request.auth.token.firebase.sign_in_provider == 'google.com');
+    }
+
+    function isOwner(email) {
+      return isEmailVerified() && (request.auth.token.email == email || request.auth.token.email == "contato@dilsonferreira.com.br");
+    }
+
+    function isAdmin() {
+      return isEmailVerified() && (
+        request.auth.token.email == "contato@dilsonferreira.com.br" ||
+        request.auth.token.email == "dilsonferreirafotografia@gmail.com" ||
+        request.auth.token.firebase.sign_in_provider == 'google.com'
+      );
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() >= 1 && id.size() <= 256;
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    // --- Entity Specific Validation Blueprints ---
+    function isValidProject(data) {
+      return data.keys().hasAll(['id', 'clientName', 'clientEmail', 'projectName', 'status', 'driveFolderId', 'createdAt', 'updatedAt'])
+        && data.keys().size() <= 40
+        && data.id is string && data.id.size() <= 256
+        && data.clientName is string && data.clientName.size() <= 128
+        && data.clientEmail is string && data.clientEmail.size() <= 128
+        && data.projectName is string && data.projectName.size() <= 128
+        && data.status in ['uploaded', 'reviewing', 'approved', 'editing', 'partial_delivered', 'delivered']
+        && data.driveFolderId is string && data.driveFolderId.size() <= 512
+        && (!data.keys().hasAny(['selectedDriveFolderId']) || (data.selectedDriveFolderId is string && data.selectedDriveFolderId.size() <= 512))
+        && (!data.keys().hasAny(['deliveredDriveFolderId']) || (data.deliveredDriveFolderId is string && data.deliveredDriveFolderId.size() <= 512))
+        && (!data.keys().hasAny(['clientPhone']) || (data.clientPhone is string && data.clientPhone.size() <= 64))
+        && (!data.keys().hasAny(['adminNotes']) || (data.adminNotes is string && data.adminNotes.size() <= 2000))
+        && (!data.keys().hasAny(['deliveryEstimate']) || (data.deliveryEstimate is string && data.deliveryEstimate.size() <= 128))
+        && (!data.keys().hasAny(['priceEstimate']) || (data.priceEstimate is number || data.priceEstimate is int))
+        && (!data.keys().hasAny(['contractedCount']) || (data.contractedCount is number || data.contractedCount is int))
+        && (!data.keys().hasAny(['extraPhotoPrice']) || (data.extraPhotoPrice is number || data.extraPhotoPrice is int))
+        && (!data.keys().hasAny(['bonusPhotosCount']) || (data.bonusPhotosCount is number || data.bonusPhotosCount is int))
+        && (!data.keys().hasAny(['clientFinalNotes']) || (data.clientFinalNotes is string && data.clientFinalNotes.size() <= 2000))
+        && (!data.keys().hasAny(['sessionDate']) || (data.sessionDate is string && data.sessionDate.size() <= 64))
+        && (!data.keys().hasAny(['sessionValue']) || (data.sessionValue is number || data.sessionValue is int))
+        && (!data.keys().hasAny(['referralCode']) || (data.referralCode is string && data.referralCode.size() <= 64))
+        && (!data.keys().hasAny(['referredByCode']) || (data.referredByCode is string && data.referredByCode.size() <= 64))
+        && (!data.keys().hasAny(['referralCreditsTotal']) || (data.referralCreditsTotal is number || data.referralCreditsTotal is int))
+        && (!data.keys().hasAny(['referralCreditsUsed']) || (data.referralCreditsUsed is number || data.referralCreditsUsed is int))
+        && (!data.keys().hasAny(['referralCount']) || (data.referralCount is number || data.referralCount is int))
+        && (!data.keys().hasAny(['selectedCount']) || (data.selectedCount is int || data.selectedCount is number))
+        && (!data.keys().hasAny(['totalCount']) || (data.totalCount is int || data.totalCount is number))
+        && (!data.keys().hasAny(['deliveredCount']) || (data.deliveredCount is int || data.deliveredCount is number))
+        && (!data.keys().hasAny(['deliveryNotes']) || (data.deliveryNotes is string && data.deliveryNotes.size() <= 2000));
+    }
+
+    function isValidProof(data) {
+      return data.keys().hasAll(['id', 'name', 'thumbnailUrl', 'fullUrl', 'status', 'isSelected', 'updatedAt'])
+        && data.keys().size() <= 16
+        && data.id is string && data.id.size() <= 256
+        && data.name is string && data.name.size() <= 512
+        && data.thumbnailUrl is string && data.thumbnailUrl.size() <= 4000
+        && data.fullUrl is string && data.fullUrl.size() <= 4000
+        && data.status in ['pending', 'approved', 'rejected']
+        && data.isSelected is bool
+        && (!data.keys().hasAny(['clientNotes']) || (data.clientNotes is string && data.clientNotes.size() <= 2000))
+        && (!data.keys().hasAny(['isBonus']) || data.isBonus is bool)
+        && (!data.keys().hasAny(['bonusNote']) || (data.bonusNote is string && data.bonusNote.size() <= 2000))
+        && (!data.keys().hasAny(['driveFileId']) || (data.driveFileId is string && data.driveFileId.size() <= 256));
+    }
+
+    function isValidNotification(data) {
+      return data.keys().hasAll(['id', 'title', 'message', 'type', 'createdAt', 'read', 'recipientEmail'])
+        && data.keys().size() == 7
+        && data.id is string && data.id.size() <= 128
+        && data.title is string && data.title.size() <= 256
+        && data.message is string && data.message.size() <= 2000
+        && data.type in ['status_change', 'approval', 'notes_added', 'system']
+        && data.read is bool
+        && data.recipientEmail is string && data.recipientEmail.size() <= 128;
+    }
+
+    function isValidDeliveredProof(data) {
+      return data.keys().hasAll(['id', 'name', 'thumbnailUrl', 'fullUrl', 'batchType', 'updatedAt'])
+        && data.keys().size() <= 18
+        && data.id is string && data.id.size() <= 256
+        && data.name is string && data.name.size() <= 512
+        && data.thumbnailUrl is string && data.thumbnailUrl.size() <= 4000
+        && data.fullUrl is string && data.fullUrl.size() <= 4000
+        && data.batchType in ['partial', 'final']
+        && (!data.keys().hasAny(['creativeNotes']) || (data.creativeNotes is string && data.creativeNotes.size() <= 4000))
+        && (!data.keys().hasAny(['notes']) || (data.notes is string && data.notes.size() <= 4000))
+        && (!data.keys().hasAny(['isBonus']) || data.isBonus is bool)
+        && (!data.keys().hasAny(['bonusNote']) || (data.bonusNote is string && data.bonusNote.size() <= 2000))
+        && (!data.keys().hasAny(['downloadUrl']) || (data.downloadUrl is string && data.downloadUrl.size() <= 4000))
+        && (!data.keys().hasAny(['driveFileId']) || (data.driveFileId is string && data.driveFileId.size() <= 256));
+    }
+
+    function isValidReferralRecord(data) {
+      return data.keys().hasAll(['id', 'referralCode', 'referredClientName', 'sessionValue', 'creditGenerated', 'status', 'createdAt'])
+        && data.keys().size() <= 12
+        && data.id is string && data.id.size() <= 256
+        && data.referralCode is string && data.referralCode.size() <= 64
+        && data.referredClientName is string && data.referredClientName.size() <= 128
+        && (data.sessionValue is number || data.sessionValue is int)
+        && (data.creditGenerated is number || data.creditGenerated is int)
+        && data.status in ['confirmed', 'pending']
+        && (!data.keys().hasAny(['referredClientEmail']) || (data.referredClientEmail is string && data.referredClientEmail.size() <= 128))
+        && (!data.keys().hasAny(['referredProjectName']) || (data.referredProjectName is string && data.referredProjectName.size() <= 128))
+        && (!data.keys().hasAny(['notes']) || (data.notes is string && data.notes.size() <= 2000));
+    }
+
+    // --- Firestore Path Access Declarations ---
+    match /projects/{projectId} {
+      // Direct Get and secure List Query enforcement
+      allow read: if isAdmin() || (isEmailVerified() && existing().clientEmail == request.auth.token.email);
+      
+      allow create: if isAdmin() 
+        && isValidId(projectId)
+        && isValidProject(incoming()) 
+        && incoming().createdAt == request.time 
+        && incoming().updatedAt == request.time;
+        
+      allow delete: if isAdmin() && isValidId(projectId);
+      
+      allow update: if isValidId(projectId) && isValidProject(incoming()) && (
+        isAdmin() || (
+          isOwner(existing().clientEmail) && 
+          incoming().clientEmail == existing().clientEmail &&
+          incoming().driveFolderId == existing().driveFolderId &&
+          incoming().createdAt == existing().createdAt &&
+          incoming().updatedAt == request.time &&
+          incoming().diff(existing()).affectedKeys().hasOnly(['status', 'selectedCount', 'updatedAt', 'clientFinalNotes'])
+        )
+      );
+
+      // --- Nested Proofs Subcollection ---
+      match /proofs/{proofId} {
+        allow read: if isAdmin() || (
+          isEmailVerified() && 
+          get(/databases/$(database)/documents/projects/$(projectId)).data.clientEmail == request.auth.token.email
+        );
+        
+        allow create: if isAdmin()
+          && isValidId(projectId)
+          && isValidId(proofId)
+          && isValidProof(incoming())
+          && incoming().updatedAt == request.time;
+          
+        allow delete: if isAdmin() && isValidId(projectId) && isValidId(proofId);
+        
+        allow update: if isValidId(projectId) && isValidId(proofId) && isValidProof(incoming()) && (
+          isAdmin() || (
+            isEmailVerified() && 
+            get(/databases/$(database)/documents/projects/$(projectId)).data.clientEmail == request.auth.token.email &&
+            incoming().name == existing().name &&
+            incoming().thumbnailUrl == existing().thumbnailUrl &&
+            incoming().fullUrl == existing().fullUrl &&
+            incoming().updatedAt == request.time &&
+            incoming().diff(existing()).affectedKeys().hasOnly(['status', 'clientNotes', 'isSelected', 'updatedAt'])
+          )
+        );
+      }
+
+      // --- Nested Delivered Subcollection (03 - EDITADAS) ---
+      match /delivered/{deliveredId} {
+        allow read: if isAdmin() || (
+          isEmailVerified() && 
+          get(/databases/$(database)/documents/projects/$(projectId)).data.clientEmail == request.auth.token.email
+        );
+        
+        allow create: if isAdmin()
+          && isValidId(projectId)
+          && isValidId(deliveredId)
+          && isValidDeliveredProof(incoming())
+          && incoming().updatedAt == request.time;
+          
+        allow delete: if isAdmin() && isValidId(projectId) && isValidId(deliveredId);
+        
+        allow update: if isAdmin()
+          && isValidId(projectId)
+          && isValidId(deliveredId)
+          && isValidDeliveredProof(incoming());
+      }
+
+      // --- Nested Notifications Subcollection ---
+      match /notifications/{notificationId} {
+        allow read: if isAdmin() || (
+          isEmailVerified() && 
+          get(/databases/$(database)/documents/projects/$(projectId)).data.clientEmail == request.auth.token.email
+        );
+        
+        allow create: if isValidId(projectId) && isValidId(notificationId) && isValidNotification(incoming()) && (
+          isAdmin() || (
+            isEmailVerified() && 
+            get(/databases/$(database)/documents/projects/$(projectId)).data.clientEmail == request.auth.token.email &&
+            incoming().createdAt == request.time &&
+            (incoming().recipientEmail == "contato@dilsonferreira.com.br" || incoming().recipientEmail == request.auth.token.email)
+          )
+        );
+        
+        allow delete: if isAdmin() && isValidId(projectId) && isValidId(notificationId);
+        
+        allow update: if isValidId(projectId) && isValidId(notificationId) && isValidNotification(incoming()) && (
+          isAdmin() || (
+            isEmailVerified() && 
+            existing().recipientEmail == request.auth.token.email &&
+            incoming().diff(existing()).affectedKeys().hasOnly(['read'])
+          )
+        );
+      }
+
+      // --- Nested Referrals & VIP Cashback Subcollection ---
+      match /referrals/{referralId} {
+        allow read: if isAdmin() || (
+          isEmailVerified() && 
+          get(/databases/$(database)/documents/projects/$(projectId)).data.clientEmail == request.auth.token.email
+        );
+        allow create, update, delete: if isAdmin() && isValidId(projectId) && isValidId(referralId);
+      }
+    }
+  }
+}
